@@ -6,7 +6,7 @@ namespace StoreAPIs
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +21,21 @@ namespace StoreAPIs
                 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
             var app = builder.Build();
+            using var scop=app.Services.CreateScope();
+            var services=scop.ServiceProvider;
+            var context=services.GetRequiredService<StoreDbContext>();
+            var loggerFactory=services.GetRequiredService<ILoggerFactory>();
 
+            try
+            {
+                await context.Database.MigrateAsync();
+
+            }
+            catch (Exception ex) {
+             var logger=   loggerFactory.CreateLogger<Program>();
+                logger.LogError(ex, ex.Message);
+            }
+            await context.Database.MigrateAsync();
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
